@@ -20,7 +20,7 @@
         ;; Make current-location maker from the current location
         ;; and push it into mark-ring if it is not
         (setq current-marker (point-marker))
-        (unless (member current-marker global-mark-ring)
+        (unless (and (marker-position current-marker) (member current-marker global-mark-ring))
           (push-mark))
         ;; now, switch to the buffer and go to the pos specified by the marker
         (switch-to-buffer (marker-buffer marker))
@@ -60,7 +60,7 @@ marker information that can be acquired from each element in `global-mark-ring'"
           (end-of-line)
           (setq end (point))
           (add-to-list 'ret
-                       (format "%d:(%d:%s):%s"
-                               (1+ i) linenum bufname
+                       (format "%d:(%s:%d):%s"
+                               (1+ i) bufname linenum
                                (buffer-substring-no-properties start end)) t))))
     ret))
