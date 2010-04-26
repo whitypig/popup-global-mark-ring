@@ -9,10 +9,10 @@
   (let ((item nil)
         (num 0))
     ;; Show menu and get selection
-    (setq item (popup-menu* (popup-global-mark-ring-menu)
+    (setq item (and global-mark-ring (popup-menu* (popup-global-mark-ring-menu)
                             :scroll-bar t
                             :margin t
-                            :width popup-global-mark-ring-menu-width))
+                            :width popup-global-mark-ring-menu-width)))
     (when item
       (when (string-match "^\\([0-9]+\\):.*" item)
         (setq num (1- (string-to-number (match-string 1 item))))
@@ -44,23 +44,26 @@
 Iterating `global-mark-ring', make and return a list consisting of
 marker information that can be acquired from each element in `global-mark-ring'"
   (interactive)
-  (let ((ret nil))
-    (dotimes (i (length global-mark-ring))
-      (let ((pos (marker-position (nth i global-mark-ring)))
-            (bufname (buffer-name (marker-buffer (nth i global-mark-ring))))
+  (let ((ret nil)
+        (i 1))
+    (dolist (elt global-mark-ring)
+      (let ((pos (marker-position elt))
+            (bufname (buffer-name (marker-buffer elt)))
             (linenum 0)
             (start 0)
             (end 0))
-        (save-excursion
-          (set-buffer bufname)
-          (setq linenum (line-number-at-pos pos))
-          (goto-char pos)
-          (beginning-of-line)
-          (setq start (point))
-          (end-of-line)
-          (setq end (point))
-          (add-to-list 'ret
-                       (format "%d:(%s:%d):%s"
-                               (1+ i) bufname linenum
-                               (buffer-substring-no-properties start end)) t))))
-    ret))
+        (when (and pos bufname)
+          (save-excursion
+            (set-buffer bufname)
+            (setq linenum (line-number-at-pos pos))
+            (goto-char pos)
+            (beginning-of-line)
+            (setq start (point))
+            (end-of-line)
+            (setq end (point))
+            (add-to-list 'ret
+                         (format "%d:(%s:%d):%s"
+                                 i bufname linenum
+                                 (buffer-substring-no-properties start end)) t))
+          (setq i (1+ i)))))
+      ret))
