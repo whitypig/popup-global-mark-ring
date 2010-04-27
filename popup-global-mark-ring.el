@@ -1,7 +1,57 @@
+;;; popup-global-mark-ring.el --- Jumping Interactively through global mark ring
+
+;; Copyright (C) 2010  whitypig
+
+;; Author: whitypig <whitypig@gmail.com>
+;; Keywords: lisp popup
+;; Version: 0.1
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+;;
+;; This software is greatly inspired by popup-kill-ring
+;; and created thanks to popup.el,
+;; so I'd like to express my gratitude to its authors.
+;;
+;; Apparently, there still are many bugs, so please be generous.
+
+;;; Requirement:
+;;
+;; * popup.el   http://github.com/m2ym/auto-complete
+
+;;; Installation:
+;;
+;; Copy popup-global-mark-ring.el to your load-path and add to your .emacs:
+;;
+;; (require 'popup-global-mark-ring)
+;; 
+;; To use popup-global-mark-ring, do M-x popup-global-mark-ring.
+;; Or assign the key whatever you want to to 'popup-global-mark-ring.
+;; For example,
+;; (global-set-key "\C-c\C-g" 'popup-global-mark-ring)
+
+;;; Code:
+
 (require 'popup)
+
+;;; Variables:
 
 (defvar popup-global-mark-ring-menu-width 70
   "Width of popup menu")
+
+;;; Functions:
 
 (defun popup-global-mark-ring ()
   "Show global mark ring menu and go to the place selected."
@@ -22,13 +72,9 @@
         (setq current-marker (point-marker))
         (unless (and (marker-position current-marker) (member current-marker global-mark-ring))
           (push-mark))
-        ;; now, switch to the buffer and go to the pos specified by the marker
+        ;; now, switch to and go to the place specified by the marker
         (switch-to-buffer (marker-buffer marker))
         (goto-char (marker-position marker))))))
-
-;;  test code
-(ignore-errors
-  (popup-menu* (popup-global-mark-ring) :margin t :scroll-bar t))
 
 ;; TODO
 (defun popup-global-mark-ring-current ())
@@ -52,6 +98,7 @@ marker information that can be acquired from each element in `global-mark-ring'"
             (linenum 0)
             (start 0)
             (end 0))
+        ;; exclude #<marker in no buffer>
         (when (and pos bufname)
           (save-excursion
             (set-buffer bufname)
@@ -67,3 +114,6 @@ marker information that can be acquired from each element in `global-mark-ring'"
                                  (buffer-substring-no-properties start end)) t))
           (setq i (1+ i)))))
       ret))
+
+(provide 'popup-global-mark-ring)
+;;; popup-global-mark-ring.el ends here
