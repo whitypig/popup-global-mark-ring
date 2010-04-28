@@ -109,9 +109,11 @@ marker information that can be acquired from each element in `global-mark-ring'"
             (end-of-line)
             (setq end (point))
             (add-to-list 'ret
-                         (format "%d:(%s:%d):%s"
+                         (format "%d:(%s:%d): %s"
                                  i bufname linenum
-                                 (buffer-substring-no-properties start end)) t))
+                                 (replace-regexp-in-string "^[ 	]+" ""
+                                                           (buffer-substring-no-properties start end)))
+                         t))
           (setq i (1+ i)))))
       ret))
 
