@@ -66,7 +66,7 @@
     (when item
       (when (string-match "^\\([0-9]+\\):.*" item)
         (setq num (1- (string-to-number (match-string 1 item))))
-        (setq marker (nth num global-mark-ring))
+        (setq marker (nth num (delete (make-marker) (copy-sequence global-mark-ring))))
         ;; Make current-location maker from the current location
         ;; and push it into mark-ring if it is not
         (setq current-marker (point-marker))
@@ -91,15 +91,17 @@ Iterating `global-mark-ring', make and return a list consisting of
 marker information that can be acquired from each element in `global-mark-ring'"
   (interactive)
   (let ((ret nil)
-        (i 1))
+        (i 1)
+        (empty-marker (make-marker)))
     (dolist (elt global-mark-ring)
-      (let ((pos (marker-position elt))
-            (bufname (buffer-name (marker-buffer elt)))
-            (linenum 0)
-            (start 0)
-            (end 0))
-        ;; exclude #<marker in no buffer>
-        (when (and pos bufname)
+      ;; exclude #<marker in no buffer>
+      (unless (equal empty-marker elt)
+        (let ((pos (marker-position elt))
+              (bufname (buffer-name (marker-buffer elt)))
+              (linenum 0)
+              (start 0)
+              (end 0))
+          ;; get one line in the buffer specified by this marker
           (save-excursion
             (set-buffer bufname)
             (setq linenum (line-number-at-pos pos))
@@ -113,8 +115,8 @@ marker information that can be acquired from each element in `global-mark-ring'"
                                  i bufname linenum
                                  (replace-regexp-in-string "^[ 	]+" ""
                                                            (buffer-substring-no-properties start end)))
-                         t))
-          (setq i (1+ i)))))
+                           t))
+            (setq i (1+ i)))))
       ret))
 
 (provide 'popup-global-mark-ring)
