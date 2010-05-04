@@ -60,9 +60,9 @@
         (num 0))
     ;; Show menu and get selection
     (setq item (and global-mark-ring (popup-menu* (popup-global-mark-ring-menu)
-                            :scroll-bar t
-                            :margin t
-                            :width popup-global-mark-ring-menu-width)))
+                                                  :scroll-bar t
+                                                  :margin t
+                                                  :width popup-global-mark-ring-menu-width)))
     (when item
       (when (string-match "^\\([0-9]+\\):.*" item)
         (setq num (1- (string-to-number (match-string 1 item))))
