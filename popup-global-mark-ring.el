@@ -121,6 +121,7 @@ marker information that can be acquired from each element in `global-mark-ring'"
 
 (defun popup-global-mark-ring-local-menu ()
   "Return a list of string representation of mark-ring."
+  (interactive)
   (let ((ret nil)
         (i 1)
         (ring nil))
