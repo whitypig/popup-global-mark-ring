@@ -42,6 +42,10 @@
 ;; For example,
 ;; (global-set-key "\C-c\C-g" 'popup-global-mark-ring)
 
+;;; Usage notes
+;; When a menu is being showd, you can switch between global-mark-ring
+;; menu and local-mark-ring menu by "\C-t".
+
 ;;; Code:
 
 (require 'popup)
@@ -51,28 +55,43 @@
 (defvar popup-global-mark-ring-menu-width 70
   "Width of popup menu")
 
+(defvar popup-global-mark-ring-keymap
+  (let ((keymap (make-sparse-keymap)))
+    (set-keymap-parent keymap popup-menu-keymap)
+    (define-key keymap "\C-t" 'popup-global-mark-ring-switch)
+    keymap)
+  "A keymap `popup-menu*' of `popup-global-mark-ring'.")
+
+(defvar popup-global-mark-ring-menu-func 'popup-global-mark-ring-menu
+  "A function for displaying popup-menu.
+This can be either `popup-global-mark-ring-menu' or
+`popup-global-mark-ring-local-menu'")
+
+(defvar popup-global-mark-ring-ring-var nil
+  "A variable holding a copy of either global-mark-ring or mark-ring")
+
+
 ;;; Functions:
 
 (defun popup-global-mark-ring ()
   "Show global mark ring menu and go to the place selected."
   (interactive)
   (let ((item nil)
-        (num 0))
+        (num 0)
+        (marker nil)
+        (current-marker nil))
     ;; Show menu and get selection
-    (setq item (and global-mark-ring (popup-menu* (popup-global-mark-ring-menu)
-                                                  :scroll-bar t
-                                                  :margin t
-                                                  :width popup-global-mark-ring-menu-width)))
+    (setq item (popup-global-mark-ring-get-selection))
     (when item
       (when (string-match "^\\([0-9]+\\):.*" item)
         (setq num (1- (string-to-number (match-string 1 item))))
-        (setq marker (nth num (delete (make-marker) (copy-sequence global-mark-ring))))
-        ;; Make current-location maker from the current location
+        (setq marker (nth num popup-global-mark-ring-ring-var))
+        ;; Make current-location marker from the current location
         ;; and push it into mark-ring if it is not
         (setq current-marker (point-marker))
         (unless (and (marker-position current-marker) (member current-marker global-mark-ring))
           (push-mark))
-        ;; now, switch to and go to the place specified by the marker
+        ;; now, go to the place specified by the marker
         (switch-to-buffer (marker-buffer marker))
         (goto-char (marker-position marker))))))
 
@@ -92,31 +111,35 @@ marker information that can be acquired from each element in `global-mark-ring'"
   (interactive)
   (let ((ret nil)
         (i 1)
-        (empty-marker (make-marker)))
+        (empty-marker (make-marker))
+        (ring nil))
     (dolist (elt global-mark-ring)
-      ;; exclude #<marker in no buffer>
-      (unless (equal empty-marker elt)
-        (let ((pos (marker-position elt))
-              (bufname (buffer-name (marker-buffer elt)))
-              (linenum 0)
-              (start 0)
-              (end 0))
-          ;; get one line in the buffer specified by this marker
-          (save-excursion
-            (set-buffer bufname)
-            (setq linenum (line-number-at-pos pos))
-            (goto-char pos)
-            (beginning-of-line)
-            (setq start (point))
-            (end-of-line)
-            (setq end (point))
-            (add-to-list 'ret
-                         (format "%d:(%s:%d): %s"
-                                 i bufname linenum
-                                 (replace-regexp-in-string "^[ 	]+" ""
-                                                           (buffer-substring-no-properties start end)))
-                           t))
-            (setq i (1+ i)))))
+      (unless (equal elt empty-marker)
+        (add-to-list 'ring elt t)))
+    ;; save current ring
+    (setq popup-global-mark-ring-ring-var ring)
+    (dolist (elt ring)
+      (let ((pos (marker-position elt))
+            (bufname (buffer-name (marker-buffer elt)))
+            (linenum 0)
+            (start 0)
+            (end 0))
+        ;; get one line in the buffer specified by this marker
+        (save-excursion
+          (set-buffer bufname)
+          (setq linenum (line-number-at-pos pos))
+          (goto-char pos)
+          (beginning-of-line)
+          (setq start (point))
+          (end-of-line)
+          (setq end (point))
+          (add-to-list 'ret
+                       (format "%d:(%s:%d): %s"
+                               i bufname linenum
+                               (replace-regexp-in-string "^[ 	]+" ""
+                                                         (buffer-substring-no-properties start end)))
+                       t))
+        (setq i (1+ i))))
       ret))
 
 (defun popup-global-mark-ring-local-menu ()
@@ -130,6 +153,7 @@ marker information that can be acquired from each element in `global-mark-ring'"
       (add-to-list 'ring elt t))
     ;; sort by position
     (setq ring (sort ring (lambda (a b) (< (marker-position a) (marker-position b)))))
+    (setq popup-global-mark-ring-ring-var ring)
     (dolist (m ring)
       (let* ((pos (marker-position m))
             (linenum (line-number-at-pos pos))
@@ -148,6 +172,39 @@ marker information that can be acquired from each element in `global-mark-ring'"
                        (format "%d:(%d): %s" i linenum s) t)
           (setq i (1+ i)))))
     ret))
+
+(defun popup-global-mark-ring-get-selection ()
+  "Return a selected item or nil."
+  (let ((ret nil))
+    (cond
+     ((equal popup-global-mark-ring-menu-func 'popup-global-mark-ring-local-menu)
+      (setq ret (and mark-ring
+                     (popup-menu* (call-interactively
+                                   popup-global-mark-ring-menu-func)
+                                  :scroll-bar t
+                                  :margin t
+                                  :width popup-global-mark-ring-menu-width
+                                  :keymap popup-global-mark-ring-keymap))))
+     ((equal popup-global-mark-ring-menu-func 'popup-global-mark-ring-menu)
+      (setq ret (and global-mark-ring
+                     (popup-menu* (call-interactively
+                                   popup-global-mark-ring-menu-func)
+                                  :scroll-bar t
+                                  :margin t
+                                  :width popup-global-mark-ring-menu-width
+                                  :keymap popup-global-mark-ring-keymap))))
+     (t nil))
+    ret))
+
+(defun popup-global-mark-ring-switch ()
+  "Switch from global-mark-ring to mark-ring and vice versa."
+  (interactive)
+  (if (equal popup-global-mark-ring-menu-func 'popup-global-mark-ring-menu)
+      (setq popup-global-mark-ring-menu-func 'popup-global-mark-ring-local-menu)
+    (setq popup-global-mark-ring-menu-func 'popup-global-mark-ring-menu))
+  ;; variable `menu' is defined in `popup.el'
+  (popup-delete menu)
+  (popup-global-mark-ring))
 
 (provide 'popup-global-mark-ring)
 ;;; popup-global-mark-ring.el ends here
