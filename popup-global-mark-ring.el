@@ -119,5 +119,34 @@ marker information that can be acquired from each element in `global-mark-ring'"
             (setq i (1+ i)))))
       ret))
 
+(defun popup-global-mark-ring-local-menu ()
+  "Return a list of string representation of mark-ring."
+  (let ((ret nil)
+        (i 1)
+        (ring nil))
+    ;; remove duplication in mark-ring
+    (dolist (elt mark-ring)
+      (add-to-list 'ring elt t))
+    ;; sort by position
+    (setq ring (sort ring (lambda (a b) (< (marker-position a) (marker-position b)))))
+    (dolist (m ring)
+      (let* ((pos (marker-position m))
+            (linenum (line-number-at-pos pos))
+            (start 0)
+            (end 0)
+            (s nil))
+        (save-excursion
+          (goto-char pos)
+          (beginning-of-line)
+          (setq start (point))
+          (end-of-line)
+          (setq end (point))
+          (setq s (replace-regexp-in-string "^[[:space:]]+" ""
+                                            (buffer-substring-no-properties start end)))
+          (add-to-list 'ret
+                       (format "%d:(%d): %s" i linenum s) t)
+          (setq i (1+ i)))))
+    ret))
+
 (provide 'popup-global-mark-ring)
 ;;; popup-global-mark-ring.el ends here
