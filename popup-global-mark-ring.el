@@ -86,7 +86,7 @@
 (defun popup-global-mark-ring-prev ())
 
 (defun popup-global-mark-ring-menu ()
-  "Return the list of lines with each line containing marker info.
+  "Return a list of lines with each line containing marker info.
 Iterating `global-mark-ring', make and return a list consisting of
 marker information that can be acquired from each element in `global-mark-ring'"
   (interactive)
