@@ -177,22 +177,24 @@ marker information that can be acquired from each element in `global-mark-ring'"
   "Return a selected item or nil."
   (let ((ret nil))
     (cond
+     ;; local mode
      ((equal popup-global-mark-ring-menu-func 'popup-global-mark-ring-local-menu)
-      (setq ret (and mark-ring
-                     (popup-menu* (call-interactively
+      ;; if mark-ring is empty, switch to global mode
+      (unless mark-ring (setq popup-global-mark-ring-menu-func 'popup-global-mark-ring-menu))
+      (setq ret (popup-menu* (call-interactively
                                    popup-global-mark-ring-menu-func)
                                   :scroll-bar t
                                   :margin t
                                   :width popup-global-mark-ring-menu-width
-                                  :keymap popup-global-mark-ring-keymap))))
-     ((equal popup-global-mark-ring-menu-func 'popup-global-mark-ring-menu)
-      (setq ret (and global-mark-ring
-                     (popup-menu* (call-interactively
-                                   popup-global-mark-ring-menu-func)
-                                  :scroll-bar t
-                                  :margin t
-                                  :width popup-global-mark-ring-menu-width
-                                  :keymap popup-global-mark-ring-keymap))))
+                                  :keymap popup-global-mark-ring-keymap)))
+     ;; global mode
+     ((and global-mark-ring (equal popup-global-mark-ring-menu-func 'popup-global-mark-ring-menu))
+      (setq ret (popup-menu* (call-interactively
+                              popup-global-mark-ring-menu-func)
+                             :scroll-bar t
+                             :margin t
+                             :width popup-global-mark-ring-menu-width
+                             :keymap popup-global-mark-ring-keymap)))
      (t nil))
     ret))
 
