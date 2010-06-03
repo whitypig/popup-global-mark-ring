@@ -187,7 +187,9 @@ marker information that can be acquired from each element in `global-mark-ring'"
      ;; local mode
      ((equal popup-global-mark-ring-menu-func 'popup-global-mark-ring-local-menu)
       ;; if mark-ring is empty, switch to global mode
-      (unless mark-ring (setq popup-global-mark-ring-menu-func 'popup-global-mark-ring-menu))
+      (unless mark-ring
+        (message "Local mark-ring is empty")
+        (setq popup-global-mark-ring-menu-func 'popup-global-mark-ring-menu))
       (setq ret (popup-menu* (call-interactively
                                    popup-global-mark-ring-menu-func)
                                   :scroll-bar t
