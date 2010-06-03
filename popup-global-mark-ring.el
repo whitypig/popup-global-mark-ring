@@ -53,7 +53,9 @@
 ;;; Variables:
 
 (defvar popup-global-mark-ring-menu-width 70
-  "Width of popup menu")
+  "Width of popup menu.
+If the width of a line containing a marker is over this value,
+the line is trimmed to this value.")
 
 (defvar popup-global-mark-ring-keymap
   (let ((keymap (make-sparse-keymap)))
@@ -82,6 +84,7 @@ This can be either `popup-global-mark-ring-menu' or
         (current-marker nil))
     ;; Show menu and get selection
     (setq item (popup-global-mark-ring-get-selection))
+    (unless item (message "both mark rings are empty!"))
     (when item
       (when (string-match "^\\([0-9]+\\):.*" item)
         (setq num (1- (string-to-number (match-string 1 item))))
@@ -123,7 +126,8 @@ marker information that can be acquired from each element in `global-mark-ring'"
             (bufname (buffer-name (marker-buffer elt)))
             (linenum 0)
             (start 0)
-            (end 0))
+            (end 0)
+            (s nil))
         ;; get one line in the buffer specified by this marker
         (save-excursion
           (set-buffer bufname)
@@ -133,12 +137,12 @@ marker information that can be acquired from each element in `global-mark-ring'"
           (setq start (point))
           (end-of-line)
           (setq end (point))
-          (add-to-list 'ret
-                       (format "%d:(%s:%d): %s"
-                               i bufname linenum
-                               (replace-regexp-in-string "^[ 	]+" ""
-                                                         (buffer-substring-no-properties start end)))
-                       t))
+          (setq s
+                (replace-regexp-in-string "^[[:space:]]+" "" (buffer-substring-no-properties start end)))
+          (when (and popup-global-mark-ring-menu-width
+                      (> (length s) popup-global-mark-ring-menu-width))
+            (setq s (substring-no-properties s 0 popup-global-mark-ring-menu-width)))
+          (add-to-list 'ret (format "%d:(%s:%d): %s" i bufname linenum s) t))
         (setq i (1+ i))))
       ret))
 
@@ -168,6 +172,9 @@ marker information that can be acquired from each element in `global-mark-ring'"
           (setq end (point))
           (setq s (replace-regexp-in-string "^[[:space:]]+" ""
                                             (buffer-substring-no-properties start end)))
+          (when (and popup-global-mark-ring-menu-width
+                     (> (length s) popup-global-mark-ring-menu-width))
+            (setq s (substring-no-properties s 0 popup-global-mark-ring-menu-width)))
           (add-to-list 'ret
                        (format "%d:(%d): %s" i linenum s) t)
           (setq i (1+ i)))))
